@@ -30,10 +30,10 @@ void TestFunctionality(
 
     const string result = queries_output.str();
     const auto lines = SplitBy(Strip(result), '\n');
-//    ASSERT_EQUAL(lines.size(), expected.size());
+    ASSERT_EQUAL(lines.size(), expected.size());
     for (size_t i = 0; i < lines.size(); ++i) {
-        cout << lines[i] << endl;
-//        ASSERT_EQUAL(lines[i], expected[i]);
+//        cout << lines[i] << endl;
+        ASSERT_EQUAL(lines[i], expected[i]);
     }
 }
 
