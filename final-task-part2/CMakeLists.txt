@@ -12,7 +12,7 @@ add_executable(courseraRedBelt
         search_server.h
         iterator_range.h
         profile.h
-        test_runner.h add_data.h)
+        test_runner.h add_data.h sync.h)
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O2")
 #set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O2")

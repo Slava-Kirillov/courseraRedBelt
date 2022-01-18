@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iostream>
 #include <array>
+#include <future>
 
 static const vector<pair<size_t, size_t>> empty_vec;
 
@@ -38,14 +39,17 @@ void SearchServer::UpdateDocumentBase(istream &document_input) {
         new_index.Add(current_document);
     }
 
-    index = move(new_index);
+    index.GetAccess().ref_to_value = move(new_index);
 }
 
-void SearchServer::AddQueriesStream(istream &query_input, ostream &search_results_output) {
+template<typename ContainerOfStrings>
+void GenerateVectorStreams(vector<ostringstream> &result, ContainerOfStrings &queries, size_t first_row,
+                           InvertedIndex &index) {
 
     vector<pair<size_t, size_t>> search_results(index.getDocsCount(), make_pair(50001, 0));
-    for (string current_query; getline(query_input, current_query);) {
+    for (string &current_query: queries) {
 
+        auto &os = result[first_row];
         vector<string_view> words = SplitIntoWordsView(current_query);
         for (string_view word: words) {
             for (pair<size_t, size_t> doc: index.Lookup(word)) {
@@ -63,24 +67,65 @@ void SearchServer::AddQueriesStream(istream &query_input, ostream &search_result
                 }
         );
 
-        search_results_output << current_query << ':';
+        os << current_query << ':';
         for (auto &[docid, hitcount]: Head(search_results, 5)) {
             if (hitcount > 0) {
-                search_results_output << " {docid: " << docid << ", hitcount: " << hitcount << '}';
+                os << " {docid: " << docid << ", hitcount: " << hitcount << '}';
             }
         }
 
-        search_results_output << endl;
+        os << endl;
 
         search_results.assign(index.getDocsCount(), make_pair(50001, 0));
+
+        first_row++;
+    }
+}
+
+void SearchServer::AddQueriesStream(istream &query_input, ostream &search_results_output) {
+
+    vector<string> queries;
+    for (string current_query; getline(query_input, current_query);) {
+        queries.push_back(move(current_query));
+    }
+
+    vector<ostringstream> result(queries.size());
+
+    size_t first_row = 0;
+    size_t page_size = 1000;
+
+
+    vector<future<void>> futures;
+    auto &index_ = index.GetAccess().ref_to_value;
+
+    for (auto page: Paginate(queries, page_size)) {
+
+        futures.push_back(
+                async([&result, page, first_row, &index_] {
+                    GenerateVectorStreams(result, page, first_row, index_);
+                })
+        );
+
+//        GenerateVectorStreams(result, page, first_row, index_);
+
+        first_row += page_size;
+    }
+
+    for (auto &f: futures) {
+        f.get();
+    }
+
+
+    for (auto &os: result) {
+        search_results_output << os.str();
     }
 }
 
 void InvertedIndex::Add(string &document) {
     docs.push_back(move(document));
 
-    for (string_view& word: SplitIntoWordsView(docs[docs.size() - 1])) {
-        vector<pair<size_t, size_t>> & vec = index[{word.begin(), word.end()}];
+    for (string_view &word: SplitIntoWordsView(docs[docs.size() - 1])) {
+        vector<pair<size_t, size_t>> &vec = index[{word.begin(), word.end()}];
         if (vec.empty() || vec.back().first != (docs.size() - 1)) {
             vec.emplace_back(docs.size() - 1, 1);
         } else {

@@ -7,8 +7,10 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <unordered_map>
 
 #include "profile.h"
+#include "sync.h"
 
 using namespace std;
 
@@ -17,13 +19,13 @@ public:
 
     void Add(string &document);
 
-    [[nodiscard]] vector<pair<size_t, size_t>> const &Lookup(const string_view &word) const;
+    vector<pair<size_t, size_t>> const &Lookup(const string_view &word) const;
 
-    [[nodiscard]] const string &GetDocument(size_t id) const {
+    const string &GetDocument(size_t id) const {
         return docs[id];
     }
 
-    [[nodiscard]] size_t getDocsCount() const {
+    size_t getDocsCount() const {
         return docs.size();
     }
 
@@ -43,5 +45,5 @@ public:
     void AddQueriesStream(istream &query_input, ostream &search_results_output);
 
 private:
-    InvertedIndex index;
+    Synchronized<InvertedIndex> index;
 };

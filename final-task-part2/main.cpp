@@ -1,6 +1,8 @@
 #include "search_server.h"
 #include "parse.h"
 #include "test_runner.h"
+#include "profile.h"
+#include "add_data.h"
 
 #include <algorithm>
 #include <iterator>
@@ -11,7 +13,6 @@
 #include <fstream>
 #include <random>
 #include <thread>
-#include "profile.h"
 
 using namespace std;
 
@@ -174,6 +175,13 @@ void TestBasicSearch() {
             "we dont need no education"
     };
 
+    vector<string> docs_2;
+    for (int i = 0; i < 5; i++) {
+        docs_2.insert(docs_2.end(), docs_1.begin(), docs_1.end());
+    }
+
+//    cout << "Docs: " << docs_2.size() << endl;
+
     const vector<string> queries = {
             "we need some help",
             "it",
@@ -182,6 +190,24 @@ void TestBasicSearch() {
             "dislike",
             "about"
     };
+
+    const vector<string> queries_1 = {
+            "we need some help need push size map final const",
+            "it",
+            "i love this game",
+            "tell me why",
+            "dislike",
+            "about",
+            "ZZZ"
+    };
+
+    vector<string> queries_2;
+    for (int i = 0; i < 3000; i++) {
+        queries_2.insert(queries_2.end(), queries_1.begin(), queries_1.end());
+    }
+
+//    cout << "Queries: " << queries_2.size() << endl;
+
 
     const vector<string> expected = {
             Join(' ', vector{
@@ -200,14 +226,16 @@ void TestBasicSearch() {
             "dislike:",
             "about: {docid: 3, hitcount: 2}",
     };
-    TestFunctionality(docs, queries, expected);
+    TestFunctionality(docs_2, queries_2, expected);
+//    TestFunctionality(docs, queries, expected);
 }
 
 int main() {
     TestRunner tr;
-//    RUN_TEST(tr, TestSerpFormat);
-//    RUN_TEST(tr, TestTop5);
+    RUN_TEST(tr, TestSerpFormat);
+    RUN_TEST(tr, TestTop5);
     RUN_TEST(tr, TestHitcount);
-//    RUN_TEST(tr, TestRanking);
-//    RUN_TEST(tr, TestBasicSearch);
+    RUN_TEST(tr, TestRanking);
+    LOG_DURATION("Total")
+    RUN_TEST(tr, TestBasicSearch);
 }
